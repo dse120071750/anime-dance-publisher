@@ -25,12 +25,20 @@ except ImportError:
 
 # Import Kling submission logic
 from core.animation import submit_kling_job, load_fal_key, process_active_jobs
+from utils.cloud_sync import sync_dance_video, sync_remix_directory
 
 # Import Advanced Audio Scoring
 try:
     from workflows.audio_pipeline import run_advanced_audio_scoring_pipeline
 except ImportError:
     run_advanced_audio_scoring_pipeline = None
+
+# Import Cloud Sync
+try:
+    from utils.cloud_sync import sync_dance_video, sync_remix_directory
+except ImportError:
+    sync_dance_video = None
+    sync_remix_directory = None
 
 OUTPUT_DIR = os.path.join(ROOT, "output", "remixes")
 TEMP_DIR = os.path.join(ROOT, "output", "temp")
@@ -323,6 +331,14 @@ def run_remix_pipeline(input_video_path, style_id=None):
                 shutil.copy2(watermarked_path, project_root_final)
                 print(f"✅ Final video copied to: {project_root_final}")
                 
+                # 8. Upload to Cloud
+                if sync_remix_directory and char_id:
+                    try:
+                        print(f"\n☁️ Uploading remix assets to cloud...")
+                        sync_remix_directory(char_id, PROJECT_DIR, "jennie_kpop")
+                    except Exception as e:
+                        print(f"   ⚠️ Cloud sync failed: {e}")
+                
                 return project_root_final
         except ImportError:
             print("⚠️ Watermark module not found.")
@@ -429,6 +445,13 @@ def run_primary_dance_generation(char_img, ref_video, char_id=None, reuse_cospla
         if char_id:
              from utils.db_utils import upsert_asset
              upsert_asset(char_id, {"title": "primary", "dance_video": target_path})
+             
+             # Upload to cloud
+             if sync_dance_video:
+                 try:
+                     sync_dance_video(char_id, target_path, "primary")
+                 except Exception as e:
+                     print(f"   ⚠️ Cloud sync failed: {e}")
         return target_path, alignment_prompt
     else:
         print("❌ Primary Dance Generation Failed.")

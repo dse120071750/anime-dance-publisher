@@ -13,9 +13,19 @@ from workflows.audio_pipeline import (
     simple_merge
 )
 from workflows.watermark_job import add_watermark_to_video
+from utils.cloud_sync import sync_soundtracks
 
 
 REMIXES_DIR = os.path.join(ROOT, "output", "remixes")
+
+def extract_char_id_from_folder(folder_name):
+    """Extract character ID from remix folder name."""
+    import re
+    # Folder format: dance_{char_id}_cosplay_on_{ref}
+    match = re.search(r"dance_(.+?)_cosplay_on_", folder_name)
+    if match:
+        return match.group(1)
+    return None
 
 def process_remix_folder(folder_path, style_id="kpop_dance"):
     """
@@ -24,6 +34,7 @@ def process_remix_folder(folder_path, style_id="kpop_dance"):
     2. Extract original audio -> orig_music.mp3
     3. Generate K-Pop music -> generated_kpop_music.mp3
     4. Create [orig_soundtrack] and [kpop_soundtrack] versions
+    5. Upload to cloud
     """
     folder_name = os.path.basename(folder_path)
     result_dir = os.path.join(folder_path, "result")
@@ -111,6 +122,17 @@ def process_remix_folder(folder_path, style_id="kpop_dance"):
         simple_merge(watermarked_video, kpop_audio_path, kpop_output)
         if os.path.exists(kpop_output):
             print(f"   ✅ Created: {os.path.basename(kpop_output)}")
+    
+    # --- 3. UPLOAD TO CLOUD ---
+    char_id = extract_char_id_from_folder(folder_name)
+    if char_id:
+        try:
+            print(f"   ☁️ Syncing soundtracks to cloud...")
+            sync_soundtracks(char_id, result_dir, base_name)
+        except Exception as e:
+            print(f"   ⚠️ Cloud sync failed: {e}")
+    else:
+        print(f"   ⚠️ Could not extract char_id from folder name")
 
 
 def run_batch_soundtrack_remix(style_id="kpop_dance"):

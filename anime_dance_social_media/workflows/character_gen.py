@@ -16,6 +16,7 @@ except ImportError:
     from services.gemini_service import GeminiService
 
 from core.cosplay import create_cosplay_version
+from utils.cloud_sync import sync_character_images
 
 # Configuration
 CHAR_DIR = os.path.join(ROOT, "output", "characters")
@@ -202,6 +203,12 @@ def generate_characters(count=0, target_list=None):
                 "anime_image": output_path,
                 "cosplay_image": cosplay_path if cosplay_success else None
             })
+            
+            # Upload to GCS and update Firestore
+            try:
+                sync_character_images(char_id, output_path, cosplay_path if cosplay_success else None)
+            except Exception as e:
+                print(f"   ⚠️ Cloud sync failed (will retry later): {e}")
             
             generated_ids.append(char_id)
             # Add to local set to avoid dupes in same run
