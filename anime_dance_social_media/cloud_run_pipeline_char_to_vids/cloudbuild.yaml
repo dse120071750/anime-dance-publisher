@@ -1,4 +1,5 @@
 # Cloud Build for Lightweight Pipeline Service
+# Run from: anime_dance_social_media/
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -7,9 +8,9 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/pipeline-char-to-vids:latest'
       - '-f'
-      - 'anime_dance_social_media/cloud_run_pipeline_char_to_vids/Dockerfile'
+      - 'cloud_run_pipeline_char_to_vids/Dockerfile'
       - '.'
-    timeout: 600s  # 10 minutes
+    timeout: 900s  # 15 minutes
   
   # Push the container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -31,25 +32,24 @@ steps:
       - '--platform'
       - 'managed'
       - '--memory'
-      - '4Gi'  # Reduced from 8Gi for cost
+      - '4Gi'
       - '--cpu'
-      - '2'    # Reduced from 4
+      - '2'
       - '--timeout'
       - '3600'
       - '--concurrency'
-      - '1'    # Important: process one job at a time
+      - '1'
       - '--min-instances'
-      - '0'    # Scale to 0 when idle
+      - '0'
       - '--max-instances'
-      - '3'    # Limit concurrent processing
+      - '3'
       - '--set-env-vars'
       - 'PIPELINE_API_KEY=aura-pipeline-2026-secret,GCP_PROJECT_ID=$PROJECT_ID,GCS_BUCKET_NAME=$PROJECT_ID'
       - '--allow-unauthenticated'
-      - '--service-account'
-      - 'pipeline-runner@$PROJECT_ID.iam.gserviceaccount.com'
 
 images:
   - 'gcr.io/$PROJECT_ID/pipeline-char-to-vids:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
