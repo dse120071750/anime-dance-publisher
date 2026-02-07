@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA | AI Dance Engine for Creators</title>
+    <meta name="description" content="Transform your photos into viral AI dance videos. The ultimate tool for influencers and KOLs.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff006e;
+            --neon-purple: #8338ec;
+            --neon-cyan: #00f5ff;
+            --neon-yellow: #ffbe0b;
+            --dark-bg: #0a0a0f;
+            --darker-bg: #050508;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker-bg);
+            color: #fff;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Three.js Canvas */
+        #universe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Scanline Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.1) 50%,
+                rgba(0,0,0,0.1)
+            );
+            background-size: 100% 4px;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* Main Container */
+        .main-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(5,5,8,0.9), transparent);
+            backdrop-filter: blur(20px);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+            position: relative;
+        }
+
+        .logo::after {
+            content: 'AURA';
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: blur(20px);
+            opacity: 0.5;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .cta-nav {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+            border: none;
+            border-radius: 30px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(255, 0, 110, 0.3);
+        }
+
+        .cta-nav:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 0, 110, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 120px 50px 50px;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 1000px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 10px 25px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 50px;
+            color: var(--neon-cyan);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 245, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 245, 255, 0.6); }
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 30px;
+            letter-spacing: -2px;
+        }
+
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, var(--neon-pink) 50%, var(--neon-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 .outline-text {
+            -webkit-text-stroke: 2px var(--neon-cyan);
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: rgba(255,255,255,0.6);
+            max-width: 600px;
+            margin: 0 auto 50px;
+            font-weight: 400;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-bottom: 50px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 18px 45px;
+            border-radius: 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+            color: #fff;
+            border: none;
+            box-shadow: 0 10px 40px rgba(255, 0, 110, 0.4);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 50px rgba(255, 0, 110, 0.6);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        /* Floating Elements */
+        .floating-dancers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .dancer-silhouette {
+            position: absolute;
+            width: 300px;
+            height: 500px;
+            opacity: 0.15;
+            background: linear-gradient(180deg, var(--neon-pink), transparent);
+            filter: blur(40px);
+            border-radius: 50%;
+        }
+
+        .dancer-left {
+            left: -100px;
+            top: 20%;
+            animation: float-dancer 8s ease-in-out infinite;
+        }
+
+        .dancer-right {
+            right: -100px;
+            top: 30%;
+            animation: float-dancer 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes float-dancer {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-50px) rotate(5deg); }
+        }
+
+        /* Pipeline Section */
+        .pipeline {
+            padding: 150px 50px;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 8px 20px;
+            background: rgba(255, 0, 110, 0.1);
+            border: 1px solid var(--neon-pink);
+            border-radius: 30px;
+            color: var(--neon-pink);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        .section-desc {
+            color: rgba(255,255,255,0.5);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .pipeline-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .pipeline-step {
+            flex: 1;
+            min-width: 220px;
+            max-width: 280px;
+            padding: 40px 30px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s;
+            backdrop-filter: blur(20px);
+        }
+
+        .pipeline-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .pipeline-step:hover::before {
+            opacity: 1;
+        }
+
+        .pipeline-step:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+
+        .step-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, rgba(255,0,110,0.2), rgba(131,56,236,0.2));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: var(--darker-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            font-size: 0.9rem;
+        }
+
+        .pipeline-step h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .pipeline-step p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .pipeline-arrow {
+            font-size: 2rem;
+            color: var(--neon-purple);
+            opacity: 0.5;
+        }
+
+        @media (max-width: 1100px) {
+            .pipeline-arrow {
+                display: none;
+            }
+        }
+
+        /* Showcase Section */
+        .showcase {
+            padding: 150px 50px;
+            background: linear-gradient(180deg, transparent, rgba(131,56,236,0.05), transparent);
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .showcase-card {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+        }
+
+        .showcase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,0,110,0.1), rgba(0,245,255,0.1));
+            opacity: 0;
+            transition: opacity 0.4s;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .showcase-card:hover::before {
+            opacity: 1;
+        }
+
+        .showcase-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--neon-pink);
+            box-shadow: 0 30px 60px rgba(255, 0, 110, 0.2);
+        }
+
+        .card-media {
+            position: relative;
+            aspect-ratio: 4/5;
+            overflow: hidden;
+        }
+
+        .card-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s, filter 0.5s;
+        }
+
+        .showcase-card:hover .card-media img {
+            transform: scale(1.1);
+            filter: brightness(1.1);
+        }
+
+        .card-media video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .showcase-card.active .card-media img {
+            opacity: 0;
+        }
+
+        .showcase-card.active .card-media video {
+            opacity: 1;
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .play-overlay::after {
+            content: '▶';
+            font-size: 1.5rem;
+            color: #fff;
+            margin-left: 5px;
+        }
+
+        .showcase-card:hover .play-overlay {
+            background: var(--neon-pink);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .showcase-card.active .play-overlay {
+            opacity: 0;
+        }
+
+        .card-info {
+            padding: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-tag {
+            padding: 5px 12px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .card-info h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .card-info p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 150px 50px;
+            position: relative;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            padding: 50px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .feature-card.featured {
+            background: linear-gradient(135deg, rgba(255,0,110,0.1), rgba(131,56,236,0.1));
+            border-color: var(--neon-pink);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        .feature-card h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: rgba(255,255,255,0.6);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 25px;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .feature-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        @media (max-width: 900px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 150px 50px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(255,0,110,0.15), transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-section h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 30px;
+        }
+
+        .cta-section p {
+            color: rgba(255,255,255,0.6);
+            font-size: 1.2rem;
+            margin-bottom: 50px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 80px 50px 40px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            background: var(--darker-bg);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .footer-brand p {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .footer-links h4 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--neon-cyan);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.3);
+            font-size: 0.85rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .social-links a {
+            width: 45px;
+            height: 45px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .social-links a:hover {
+            background: var(--neon-pink);
+            border-color: var(--neon-pink);
+            transform: translateY(-3px);
+        }
+
+        @media (max-width: 900px) {
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+            nav {
+                padding: 15px 20px;
+            }
+            .nav-links {
+                display: none;
+            }
+            .hero {
+                padding: 100px 20px 50px;
+            }
+            .hero-stats {
+                flex-direction: column;
+                gap: 30px;
+            }
+        }
+
+        /* Loading Animation */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--darker-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loader" id="loader">
+        <div class="loader-text">INITIALIZING AURA...</div>
+    </div>
+
+    <!-- Scanline Effect -->
+    <div class="scanlines"></div>
+
+    <!-- Three.js Canvas -->
+    <canvas id="universe"></canvas>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Navigation -->
+        <nav>
+            <div class="logo">AURA</div>
+            <ul class="nav-links">
+                <li><a href="#pipeline">Pipeline</a></li>
+                <li><a href="#showcase">Showcase</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="https://github.com/dse120071750/anime-dance-publisher">GitHub</a></li>
+            </ul>
+            <button class="cta-nav" onclick="document.getElementById('cta').scrollIntoView({behavior: 'smooth'})">
+                Start Creating
+            </button>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="floating-dancers">
+                <div class="dancer-silhouette dancer-left"></div>
+                <div class="dancer-silhouette dancer-right"></div>
+            </div>
+            
+            <div class="hero-content">
+                <div class="hero-badge">🚀 Next-Gen AI Dance Platform</div>
+                <h1>
+                    <span class="gradient-text">Transform</span><br>
+                    <span class="outline-text">Your Photos</span><br>
+                    <span class="gradient-text">Into Dance</span>
+                </h1>
+                <p class="hero-subtitle">
+                    The ultimate AI-powered dance engine for influencers, KOLs, and content creators. 
+                    Turn any image into a viral dance video in minutes.
+                </p>
+                
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">10K+</div>
+                        <div class="stat-label">Videos Created</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">Characters</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">50M+</div>
+                        <div class="stat-label">Views Generated</div>
+                    </div>
+                </div>
+
+                <div class="hero-buttons">
+                    <a href="#showcase" class="btn btn-primary">Explore Gallery</a>
+                    <a href="https://github.com/dse120071750/anime-dance-publisher" class="btn btn-secondary">View on GitHub</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pipeline Section -->
+        <section class="pipeline" id="pipeline">
+            <div class="section-header">
+                <div class="section-tag">How It Works</div>
+                <h2 class="section-title">The Creation Protocol</h2>
+                <p class="section-desc">
+                    Our advanced AI pipeline transforms static images into dynamic dance performances through cutting-edge generative technology.
+                </p>
+            </div>
+
+            <div class="pipeline-flow">
+                <div class="pipeline-step">
+                    <div class="step-number">01</div>
+                    <div class="step-icon">👤</div>
+                    <h3>Upload Image</h3>
+                    <p>Upload any character photo, cosplay shot, or portrait. Our AI analyzes features and pose.</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">02</div>
+                    <div class="step-icon">✨</div>
+                    <h3>AI Stylization</h3>
+                    <p>Gemini 3 transforms your image into photorealistic cosplay with perfect lighting and details.</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">03</div>
+                    <div class="step-icon">🎭</div>
+                    <h3>Motion Transfer</h3>
+                    <p>Kling AI applies professional dance choreography with natural motion and expression.</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">04</div>
+                    <div class="step-icon">🎵</div>
+                    <h3>Music Sync</h3>
+                    <p>AI-composed music with beat-perfect synchronization creates viral-ready content.</p>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="step-number">05</div>
+                    <div class="step-icon">🚀</div>
+                    <h3>Auto Publish</h3>
+                    <p>Direct integration with Instagram, TikTok, and more for instant viral distribution.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Showcase Section -->
+        <section class="showcase" id="showcase">
+            <div class="section-header">
+                <div class="section-tag">Gallery</div>
+                <h2 class="section-title">Cosplay Dance Collection</h2>
+                <p class="section-desc">
+                    Explore our curated collection of AI-generated dance performances featuring iconic anime characters.
+                </p>
+            </div>
+
+            <div class="showcase-grid" id="showcase-grid">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <div class="section-header">
+                <div class="section-tag">Why Choose AURA</div>
+                <h2 class="section-title">Built for Creators</h2>
+                <p class="section-desc">
+                    Everything you need to create viral dance content at scale.
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card featured">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Generate professional dance videos in under 5 minutes. Batch processing for multiple characters simultaneously.</p>
+                    <ul class="feature-list">
+                        <li>Parallel AI processing</li>
+                        <li>GPU-accelerated rendering</li>
+                        <li>Cloud-based workflow</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Style Consistency</h3>
+                    <p>Maintain character identity across all generated content with our advanced style preservation technology.</p>
+                    <ul class="feature-list">
+                        <li>Character recognition AI</li>
+                        <li>Outfit consistency engine</li>
+                        <li>Lighting adaptation</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Social Ready</h3>
+                    <p>Automatic optimization for all major platforms with perfect aspect ratios and quality settings.</p>
+                    <ul class="feature-list">
+                        <li>Instagram Reels format</li>
+                        <li>TikTok vertical video</li>
+                        <li>YouTube Shorts ready</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Full Control</h3>
+                    <p>Open-source pipeline with complete customization. Self-host or use our managed cloud service.</p>
+                    <ul class="feature-list">
+                        <li>GitHub integration</li>
+                        <li>Custom model support</li>
+                        <li>API access available</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section" id="cta">
+            <div class="cta-container">
+                <div class="section-tag">Join the Revolution</div>
+                <h2>Ready to Go Viral?</h2>
+                <p>Join thousands of creators using AURA to produce stunning AI dance content. 
+                   The future of content creation is here.</p>
+                <div class="hero-buttons">
+                    <a href="https://github.com/dse120071750/anime-dance-publisher" class="btn btn-primary">
+                        Get Started Free
+                    </a>
+                    <a href="terms.html" class="btn btn-secondary">
+                        Read Documentation
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo">AURA</div>
+                    <p>The next-generation AI dance engine for content creators. 
+                       Transform your images into viral dance performances with cutting-edge generative AI.</p>
+                    <div class="social-links">
+                        <a href="#" title="GitHub">⚡</a>
+                        <a href="#" title="Twitter">🐦</a>
+                        <a href="#" title="Discord">💬</a>
+                        <a href="#" title="Instagram">📷</a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#showcase">Gallery</a></li>
+                        <li><a href="#pipeline">Pipeline</a></li>
+                        <li><a href="#">Pricing</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://github.com/dse120071750/anime-dance-publisher">GitHub</a></li>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Tutorials</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 AURA MACHINE. All rights reserved. | High-Fashion AI Dance Protocol</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        // ===== LOADER =====
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 1500);
+        });
+
+        // ===== THREE.JS UNIVERSE =====
+        const canvas = document.getElementById('universe');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Colors
+        const neonPink = new THREE.Color(0xff006e);
+        const neonPurple = new THREE.Color(0x8338ec);
+        const neonCyan = new THREE.Color(0x00f5ff);
+
+        // ===== PARTICLE SYSTEM - Neural Network =====
+        const particlesCount = 3000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorArray = new Float32Array(particlesCount * 3);
+        const originalPos = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i += 3) {
+            // Create a sphere distribution
+            const radius = 5 + Math.random() * 10;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
+            posArray[i+1] = radius * Math.sin(phi) * Math.sin(theta);
+            posArray[i+2] = radius * Math.cos(phi);
+            
+            originalPos[i] = posArray[i];
+            originalPos[i+1] = posArray[i+1];
+            originalPos[i+2] = posArray[i+2];
+            
+            // Gradient colors
+            const mixFactor = Math.random();
+            const color = neonPink.clone().lerp(neonPurple, mixFactor).lerp(neonCyan, Math.random() * 0.3);
+            colorArray[i] = color.r;
+            colorArray[i+1] = color.g;
+            colorArray[i+2] = color.b;
+        }
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.03,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // ===== GRID FLOOR =====
+        const gridHelper = new THREE.GridHelper(40, 40, neonCyan, neonPurple);
+        gridHelper.position.y = -5;
+        gridHelper.material.opacity = 0.15;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+
+        // ===== FLOATING GEOMETRIC SHAPES =====
+        const shapes = [];
+        const geometries = [
+            new THREE.IcosahedronGeometry(0.5, 0),
+            new THREE.OctahedronGeometry(0.4, 0),
+            new THREE.TetrahedronGeometry(0.6, 0)
+        ];
+
+        for (let i = 0; i < 15; i++) {
+            const geometry = geometries[Math.floor(Math.random() * geometries.length)];
+            const material = new THREE.MeshBasicMaterial({
+                color: i % 3 === 0 ? neonPink : (i % 3 === 1 ? neonPurple : neonCyan),
+                transparent: true,
+                opacity: 0.3,
+                wireframe: true
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.position.x = (Math.random() - 0.5) * 20;
+            mesh.position.y = (Math.random() - 0.5) * 10;
+            mesh.position.z = (Math.random() - 0.5) * 10 - 5;
+            
+            mesh.userData = {
+                rotationSpeed: {
+                    x: (Math.random() - 0.5) * 0.02,
+                    y: (Math.random() - 0.5) * 0.02
+                },
+                floatSpeed: Math.random() * 0.01 + 0.005,
+                floatOffset: Math.random() * Math.PI * 2
+            };
+            
+            shapes.push(mesh);
+            scene.add(mesh);
+        }
+
+        // ===== CONNECTION LINES =====
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: neonCyan,
+            transparent: true,
+            opacity: 0.1
+        });
+
+        camera.position.z = 8;
+
+        // ===== MOUSE TRACKING =====
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // ===== ANIMATION LOOP =====
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            // Smooth camera movement
+            targetX = mouseX * 0.5;
+            targetY = mouseY * 0.5;
+            camera.position.x += (targetX - camera.position.x) * 0.05;
+            camera.position.y += (targetY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            // Rotate particles
+            particlesMesh.rotation.y = elapsedTime * 0.05;
+            particlesMesh.rotation.x = Math.sin(elapsedTime * 0.1) * 0.1;
+
+            // Animate shapes
+            shapes.forEach((shape, i) => {
+                shape.rotation.x += shape.userData.rotationSpeed.x;
+                shape.rotation.y += shape.userData.rotationSpeed.y;
+                shape.position.y += Math.sin(elapsedTime * shape.userData.floatSpeed + shape.userData.floatOffset) * 0.01;
+            });
+
+            // Animate grid
+            gridHelper.position.z = (elapsedTime * 0.5) % 2;
+
+            // Pulse effect on particles
+            const positions = particlesGeometry.attributes.position.array;
+            for(let i = 0; i < particlesCount * 3; i += 3) {
+                const wave = Math.sin(elapsedTime * 0.5 + originalPos[i] * 0.5) * 0.1;
+                positions[i+1] = originalPos[i+1] + wave;
+            }
+            particlesGeometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // ===== RESIZE HANDLER =====
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ===== CHARACTER DATA =====
+        const characters = [
+            { name: "Ai Hoshino", series: "Oshi no Ko", img: "ai_hoshino_1770337530_cosplay", video: "dance_ai_hoshino_1770337530_cosplay_on_AbjwLnB_E_E" },
+            { name: "Android 18", series: "Dragon Ball Z", img: "android_18_1770311237_cosplay", video: "dance_android_18_1770311237_cosplay_on_sbU71KWrTgA" },
+            { name: "Asuka Langley", series: "Evangelion", img: "asuka_langley_1770088188_cosplay", video: "dance_asuka_langley_1770088188_cosplay_on__rTwiQYvaYI" },
+            { name: "Bulma", series: "Dragon Ball", img: "bulma_1770089530_cosplay", video: "dance_bulma_1770089530_cosplay_on_SdgAy1i_DdA" },
+            { name: "C.C.", series: "Code Geass", img: "c_c__1770089949_cosplay", video: "dance_c_c__1770089949_cosplay_on_cFqlzbCLdUk" },
+            { name: "Erza Scarlet", series: "Fairy Tail", img: "erza_scarlet_1770325943_cosplay", video: "dance_erza_scarlet_1770325943_cosplay_on_VokcJZU5bK0" },
+            { name: "Faye Valentine", series: "Cowboy Bebop", img: "faye_valentine_1770088547_cosplay", video: "dance_faye_valentine_1770088547_cosplay_on_WSiVz-jsWPk" },
+            { name: "Frieren", series: "Frieren", img: "frieren_1770090238_cosplay", video: "dance_frieren_1770090238_cosplay_on_wkzgdFlEPFg" },
+            { name: "Hinata Hyuga", series: "Naruto", img: "hinata_hyuga_1770322273_cosplay", video: "dance_hinata_hyuga_1770322273_cosplay_on_cFqlzbCLdUk" },
+            { name: "Mai Sakurajima", series: "Bunny Girl Senpai", img: "mai_sakurajima_1770090155_cosplay", video: "dance_mai_sakurajima_1770090155_cosplay_on_eoO-0HNydCE" },
+            { name: "Makise Kurisu", series: "Steins;Gate", img: "makise_kurisu_1770089989_cosplay", video: "dance_makise_kurisu_1770089989_cosplay_on_P2DQwhM4Q-A" },
+            { name: "Marin Kitagawa", series: "My Dress-Up Darling", img: "marin_kitagawa_1770090196_cosplay", video: "dance_marin_kitagawa_1770090196_cosplay_on_9UCcMn1cZqg" },
+            { name: "Mikasa Ackerman", series: "Attack on Titan", img: "mikasa_ackerman_1770088112_cosplay", video: "dance_mikasa_ackerman_1770088112_cosplay_on_I99Mdt6jBpQ" },
+            { name: "Nezuko Kamado", series: "Demon Slayer", img: "nezuko_kamado_1770088087_cosplay", video: "dance_nezuko_kamado_1770088087_cosplay_on_Z5CWGCxTJSI" },
+            { name: "Power", series: "Chainsaw Man", img: "power_1770329697_cosplay", video: "dance_power_1770329697_cosplay_on_L9YKYuJdhQ0" },
+            { name: "Rei Ayanami", series: "Evangelion", img: "rei_ayanami_1770088572_cosplay", video: "dance_rei_ayanami_1770088572_cosplay_on_OCMoncIovao" },
+            { name: "Rem", series: "Re:Zero", img: "rem_1770309335_cosplay", video: "dance_rem_1770309335_cosplay_on_VokcJZU5bK0" },
+            { name: "Rin Tohsaka", series: "Fate/stay night", img: "rin_tohsaka_1770305283_cosplay", video: "dance_rin_tohsaka_1770305283_cosplay_on_SdgAy1i_DdA" },
+            { name: "Saber", series: "Fate/stay night", img: "saber_1770089823_cosplay", video: "dance_saber_1770089823_cosplay_on_WVAUCwtG4pQ" },
+            { name: "Zero Two", series: "Darling in the Franxx", img: "zero_two_1770090074_cosplay", video: "dance_zero_two_1770090074_cosplay_on_-L4k03DK4-Q" }
+        ];
+
+        // ===== POPULATE SHOWCASE =====
+        const showcaseGrid = document.getElementById('showcase-grid');
+        const baseUrl = 'https://storage.googleapis.com/nisan-n8n/anime_dance';
+
+        characters.forEach((char, index) => {
+            const card = document.createElement('div');
+            card.className = 'showcase-card';
+            card.innerHTML = `
+                <div class="card-media">
+                    <img src="${baseUrl}/characters/${char.img}.png" alt="${char.name}" loading="lazy">
+                    <video loop playsinline preload="none" src="${baseUrl}/dances/${char.video}.mp4"></video>
+                    <div class="play-overlay"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-meta">
+                        <span class="card-tag">Cosplay</span>
+                        <div class="card-stats">
+                            <span>▶ ${Math.floor(Math.random() * 500 + 100)}K</span>
+                            <span>♥ ${Math.floor(Math.random() * 50 + 10)}K</span>
+                        </div>
+                    </div>
+                    <h3>${char.name}</h3>
+                    <p>${char.series}</p>
+                </div>
+            `;
+            showcaseGrid.appendChild(card);
+        });
+
+        // ===== VIDEO INTERACTION =====
+        let currentlyPlayingCard = null;
+
+        function playCard(card) {
+            if (currentlyPlayingCard === card) return;
+            
+            if (currentlyPlayingCard) {
+                const prevVideo = currentlyPlayingCard.querySelector('video');
+                currentlyPlayingCard.classList.remove('active');
+                if (prevVideo) {
+                    prevVideo.pause();
+                    prevVideo.currentTime = 0;
+                }
+            }
+            
+            const video = card.querySelector('video');
+            if (video) {
+                currentlyPlayingCard = card;
+                card.classList.add('active');
+                video.play().catch(e => console.log('Autoplay blocked'));
+            }
+        }
+
+        function stopCard(card) {
+            if (currentlyPlayingCard === card) {
+                const video = card.querySelector('video');
+                card.classList.remove('active');
+                if (video) {
+                    video.pause();
+                    video.currentTime = 0;
+                }
+                currentlyPlayingCard = null;
+            }
+        }
+
+        // Add event listeners to cards
+        document.querySelectorAll('.showcase-card').forEach(card => {
+            card.addEventListener('mouseenter', () => playCard(card));
+            card.addEventListener('mouseleave', () => stopCard(card));
+            card.addEventListener('click', () => playCard(card));
+        });
+
+        // ===== SCROLL ANIMATIONS =====
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe elements for animation
+        document.querySelectorAll('.pipeline-step, .feature-card, .showcase-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s, transform 0.6s';
+            observer.observe(el);
+        });
+
+        // ===== SMOOTH SCROLL FOR NAV LINKS =====
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
