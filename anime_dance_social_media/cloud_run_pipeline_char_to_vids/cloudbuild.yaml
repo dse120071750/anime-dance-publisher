@@ -1,0 +1,55 @@
+# Cloud Build for Lightweight Pipeline Service
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/pipeline-char-to-vids:latest'
+      - '-f'
+      - 'anime_dance_social_media/cloud_run_pipeline_char_to_vids/Dockerfile'
+      - '.'
+    timeout: 600s  # 10 minutes
+  
+  # Push the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/pipeline-char-to-vids:latest'
+  
+  # Deploy to Cloud Run (scale-to-0 optimized)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'pipeline-char-to-vids'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/pipeline-char-to-vids:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--memory'
+      - '4Gi'  # Reduced from 8Gi for cost
+      - '--cpu'
+      - '2'    # Reduced from 4
+      - '--timeout'
+      - '3600'
+      - '--concurrency'
+      - '1'    # Important: process one job at a time
+      - '--min-instances'
+      - '0'    # Scale to 0 when idle
+      - '--max-instances'
+      - '3'    # Limit concurrent processing
+      - '--set-env-vars'
+      - 'PIPELINE_API_KEY=aura-pipeline-2026-secret,GCP_PROJECT_ID=$PROJECT_ID,GCS_BUCKET_NAME=$PROJECT_ID'
+      - '--allow-unauthenticated'
+      - '--service-account'
+      - 'pipeline-runner@$PROJECT_ID.iam.gserviceaccount.com'
+
+images:
+  - 'gcr.io/$PROJECT_ID/pipeline-char-to-vids:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

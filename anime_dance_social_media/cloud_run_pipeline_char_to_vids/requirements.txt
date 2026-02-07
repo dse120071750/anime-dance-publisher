@@ -1,0 +1,20 @@
+# Lightweight Cloud Run Pipeline - Minimal dependencies
+
+# Web framework (lightweight)
+flask==3.0.0
+gunicorn==21.2.0
+
+# Google Cloud (only what we need)
+google-cloud-firestore==2.13.0
+google-cloud-storage==2.10.0
+google-auth==2.23.0
+
+# AI/ML (Gemini only)
+google-generativeai==0.3.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Note: moviepy, opencv, etc. are imported lazily during processing
+# This keeps the container small and startup fast
