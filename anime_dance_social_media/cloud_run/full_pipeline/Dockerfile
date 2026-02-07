@@ -11,15 +11,16 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libfontconfig1 \
     libxrender1 \
-    libgl1-mesa-glx \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (for layer caching)
-COPY cloud_run/full_pipeline/requirements.txt .
+COPY anime_dance_social_media/cloud_run/full_pipeline/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the full pipeline service
-COPY cloud_run/full_pipeline/ ./cloud_run/full_pipeline/
+COPY anime_dance_social_media/cloud_run/full_pipeline/ ./cloud_run/full_pipeline/
 
 # Copy the entire project (needed for workflow imports)
 COPY services/ ./services/
@@ -43,7 +44,6 @@ RUN mkdir -p /tmp/output /tmp/temp /tmp/references
 EXPOSE 8080
 
 # Run with gunicorn
-# Using gevent worker for async handling
 CMD exec gunicorn \
     --bind :$PORT \
     --workers 2 \

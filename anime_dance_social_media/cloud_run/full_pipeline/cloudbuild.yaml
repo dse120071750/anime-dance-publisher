@@ -1,0 +1,48 @@
+# Cloud Build configuration for Full Pipeline Service
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/full-pipeline-service:latest'
+      - '-f'
+      - 'anime_dance_social_media/cloud_run/full_pipeline/Dockerfile'
+      - '.'
+    dir: '.'
+  
+  # Push the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/full-pipeline-service:latest'
+  
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'full-pipeline-service'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/full-pipeline-service:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--memory'
+      - '8Gi'
+      - '--cpu'
+      - '4'
+      - '--timeout'
+      - '3600'
+      - '--concurrency'
+      - '1'
+      - '--max-instances'
+      - '3'
+      - '--set-env-vars'
+      - 'PIPELINE_API_KEY=aura-pipeline-2026-secret,GCP_PROJECT_ID=nisan-n8n,GCS_BUCKET_NAME=nisan-n8n'
+      - '--allow-unauthenticated'
+
+images:
+  - 'gcr.io/$PROJECT_ID/full-pipeline-service:latest'
