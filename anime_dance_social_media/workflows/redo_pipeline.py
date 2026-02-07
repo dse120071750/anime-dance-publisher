@@ -12,6 +12,7 @@ sys.path.append(ROOT)
 from core.animation import submit_kling_job, process_active_jobs, swap_first_frame
 from workflows.main_pipeline import run_remix_pipeline
 from utils.db_utils import load_db, upsert_asset, get_entry
+from utils.cloud_sync import sync_character_images, sync_dance_video
 
 # Dirs
 CHAR_DIR = os.path.join(ROOT, "output", "characters")
@@ -89,6 +90,11 @@ def redo_project(project_identifier, redo_anime=False, swap_ref=False, same_ref=
                     "title": "primary",
                     "anime_image": base_char_img
                 })
+                # Sync to cloud
+                try:
+                    sync_character_images(entry["id"], base_char_img, None)
+                except Exception as e:
+                    print(f"      ⚠️ Cloud sync failed: {e}")
             else:
                 print(f"      ❌ Anime generation failed.")
         else:
@@ -110,6 +116,11 @@ def redo_project(project_identifier, redo_anime=False, swap_ref=False, same_ref=
         if create_cosplay_version(base_char_img, char_img, service):
             print(f"      ✅ Cosplay Image Redone: {char_img}")
             upsert_asset(entry["id"], {"title": "primary", "cosplay_image": char_img})
+            # Sync to cloud
+            try:
+                sync_character_images(entry["id"], None, char_img)
+            except Exception as e:
+                print(f"      ⚠️ Cloud sync failed: {e}")
         else:
             print(f"      ⚠️ Cosplay Image Redo Failed, using existing one.")
     else:
@@ -203,6 +214,11 @@ def redo_project(project_identifier, redo_anime=False, swap_ref=False, same_ref=
     
     if deliverable_path and os.path.exists(deliverable_path):
         upsert_asset(entry["id"], {"title": "primary", "DELIVERABLE": deliverable_path})
+        # Sync to cloud
+        try:
+            sync_dance_video(entry["id"], deliverable_path, "primary_deliverable")
+        except Exception as e:
+            print(f"      ⚠️ Cloud sync failed: {e}")
         print(f"      ✅ DELIVERABLE Path Saved to DB.")
         print(f"\n✨ TOTAL REDO COMPLETE. Result: {os.path.basename(deliverable_path)}")
     else:
@@ -285,6 +301,11 @@ def loop_all_projects():
                             "prompt": primary_asset.get("prompt") if primary_asset else None
                         })
                         print(f"   📝 Registered to PRIMARY: {os.path.basename(fpath)}")
+                        # Sync to cloud
+                        try:
+                            sync_dance_video(char_id, fpath, "primary")
+                        except Exception as e:
+                            print(f"   ⚠️ Cloud sync failed: {e}")
                         if ref_video_path:
                             print(f"      🔗 Linked Motion Ref: {os.path.basename(ref_video_path)}")
                         
@@ -299,6 +320,11 @@ def loop_all_projects():
                             "motion_ref_video": ref_video_path
                         })
                         print(f"   📝 Registered as {alt_title}: {os.path.basename(fpath)}")
+                        # Sync to cloud
+                        try:
+                            sync_dance_video(char_id, fpath, alt_title)
+                        except Exception as e:
+                            print(f"   ⚠️ Cloud sync failed: {e}")
 
             if dance_video_to_process:
                 print(f"   🚀 Triggering REMIX Pipeline for PRIMARY: {os.path.basename(dance_video_to_process)}")
@@ -306,6 +332,11 @@ def loop_all_projects():
                 
                 if deliverable and os.path.exists(deliverable):
                     upsert_asset(char_id, {"title": "primary", "DELIVERABLE": deliverable})
+                    # Sync to cloud
+                    try:
+                        sync_dance_video(char_id, deliverable, "primary_deliverable")
+                    except Exception as e:
+                        print(f"   ⚠️ Cloud sync failed: {e}")
                     print("   ✅ Deliverable Saved.")
             else:
                 print("   ⚠️ No primary dance video found/registered. Skipping.")
